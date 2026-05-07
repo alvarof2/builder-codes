@@ -1,10 +1,23 @@
 # Celo Builder Codes — Implementation Plan
 
-**Lena, DevRel Lead, Celo Core Co — 6 May 2026**
+**Lena, DevRel Lead, Celo Core Co — 6 May 2026** *(updated 7 May 2026 after MiniPay sync — see "Update" below)*
 
 ## Objective
 
-Ship ERC-8021 attribution for Celo in time for May Proof of Ship. Lean: SDK + dbt model + distribution server. No on-chain registry, no claim UI, no payouts. Those land later.
+Ship ERC-8021 attribution **on Celo** in time for May Proof of Ship. Audience, in priority order: **MiniPay apps, Proof of Ship cohort projects, Celo ecosystem projects more broadly**. The system is Celo-only — no cross-chain interop story; ERC-8021 is the standard we conform to, nothing more.
+
+Lean scope: SDK + dbt model + distribution mechanism. No on-chain registry, no claim UI, no payouts. Those land later.
+
+## Update — 7 May 2026
+
+After sync with Vinay (MiniPay PM) and Anna:
+
+- Distribution-server form (Workstream 3 below) is **under review**. Vinay strongly preferred a single shared client-side script that derives a per-app code from the **full domain (incl. subdomain)** — no human in the loop, no separate form. Lena tentatively agreed; final call pending after the SDK + format are locked.
+- MiniPay will claim its own platform attribute (`minipay`) at the wallet level. Apps add a second attribute on top → multi-code wire format `[minipay, <app-code>]` for any tx routed through MiniPay.
+- Sequencing confirmed: SDK + wire-format spec first; figure out distribution after.
+- Wed 13 May 2026 doc deadline still stands.
+
+The Workstream 3 section below is preserved as the original plan; treat the distribution-server build as paused until the domain-derived vs form decision is final.
 
 ## Deliverables & owners
 
@@ -36,7 +49,7 @@ fromDataSuffix(suffix: Hex): { codes: string[] } | null
 verifyTx({ client, hash }): Promise<{ codes: string[] } | null>
 ```
 
-All wrappers around `ox/erc8021`. Vector tests assert byte-for-byte match with Base's reference (`baseapp` → `0x07626173656170700080218021…`) so anything tagged on Celo is decodable by tools built for Base, and vice versa.
+All wrappers around `ox/erc8021`. Vector tests assert byte-for-byte match with the canonical ERC-8021 reference vector — `toDataSuffix("baseapp")` → `0x6261736561707007 00 80218021…` — which is the example string in the ox docs and the conformance check used by every implementation of the standard. This is a wire-format conformance check, not a positioning statement: the SDK targets Celo only.
 
 **Effort:** 1.5–2 days. Skeleton + tests Day 1; integration guide + verifier + npm publish Day 2.
 
@@ -104,7 +117,7 @@ Tiny Next.js app on Vercel (or Cloudflare Workers).
 ## Open questions
 
 - **Talent Protocol API access.** Do we have a key, or do we need one? Their public Builder Score API may not cover project verification — confirm what endpoint we use.
-- **npm scope.** Is `@celo` available, or do we publish under `@celo-org`? (Confirm before publishing.)
+- **npm scope.** Publishing under `@celo-org` (matches `@celo-org/celopedia-skills`). Confirm publish access before release.
 - **Multi-code support in v1.** Worth shipping `toDataSuffix(['proofofship', 'celo_xxxx'])` from day one so Proof of Ship co-attribution works without a follow-up release. Recommend yes — `ox` already supports it; near-zero extra work.
 - **Should Talent Protocol integrate ERC-8021 attribution into Proof of Ship themselves?** If yes, we'd ask their team to use `proofofship` as a fixed platform code on every PoS-tagged action. Worth asking before May launch.
 
